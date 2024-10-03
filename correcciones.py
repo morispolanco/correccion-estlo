@@ -150,18 +150,36 @@ def call_together_api_style_correction_with_justifications(api_key, analysis, te
         st.error(f"Error al comunicarse con la API de Corrección de Estilo: {e}")
         return None
 
-# Función para crear una sesión de Stripe Checkout utilizando price_id
+# Función para obtener el price_id asociado a un product_id
+def get_price_id(product_id):
+    try:
+        prices = stripe.Price.list(product=product_id, active=True, limit=1)
+        if prices.data:
+            return prices.data[0].id
+        else:
+            st.error("No se encontró ningún precio activo asociado al producto.")
+            return None
+    except Exception as e:
+        st.error(f"Error al obtener el price_id desde Stripe: {e}")
+        return None
+
+# Función para crear una sesión de Stripe Checkout utilizando product_id
 def create_checkout_session():
+    product_id = st.secrets["STRIPE_PRODUCT_ID"]
+    price_id = get_price_id(product_id)
+    if not price_id:
+        return None
+
     try:
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
-                'price': st.secrets["STRIPE_PRICE_ID"],  # Utiliza el price_id desde los secretos
+                'price': price_id,  # Utiliza el price_id obtenido dinámicamente
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=YOUR_DOMAIN + "/?success=true&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=YOUR_DOMAIN + "/?canceled=true",
+            success_url="https://correcciones.streamlit.app/?success=true&session_id={CHECKOUT_SESSION_ID}",
+            cancel_url="https://correcciones.streamlit.app/?canceled=true",
         )
         return checkout_session.url
     except Exception as e:
@@ -227,56 +245,4 @@ if payment_verified:
 
         # Entrada de audiencia
         audience = st.text_input(
-            "Define la audiencia:",
-            help="Por ejemplo: adolescentes, adultos jóvenes, adultos, etc."
-        )
-
-        # Botón de envío
-        submit_button = st.form_submit_button(label='Analizar y Corregir')
-
-    if submit_button:
-        # Validación de entrada
-        if not text_input.strip():
-            st.error("Por favor, pega tu texto para analizar y corregir.")
-        elif not audience.strip():
-            st.error("Por favor, define la audiencia.")
-        else:
-            word_count = count_words(text_input)
-            if word_count > 2000:
-                st.error(f"El texto excede el límite de 2000 palabras. Actualmente tiene {word_count} palabras.")
-            else:
-                # Mostrar spinner mientras se procesa la solicitud
-                with st.spinner("Procesando tu solicitud..."):
-                    # Obtener la API Key desde los secretos
-                    try:
-                        api_key = st.secrets["TOGETHER_API_KEY"]
-                    except KeyError:
-                        st.error("La clave de la API no está configurada correctamente en los secrets.")
-                        st.stop()
-
-                    # Primera llamada a la API para Análisis Literario
-                    api_response_analysis = call_together_api_analysis(api_key, genre, audience, text_input)
-
-                    if api_response_analysis:
-                        # Extraer la respuesta del modelo para el análisis
-                        try:
-                            analysis = api_response_analysis['choices'][0]['message']['content']
-                            st.subheader("📄 Análisis Literario")
-                            st.write(analysis)
-                        except (KeyError, IndexError):
-                            st.error("Respuesta inesperada de la API de Análisis.")
-                            analysis = None
-
-                    # Segunda llamada a la API para Corrección de Estilo y Ortografía con Justificaciones Inline, si el análisis fue exitoso
-                    if analysis:
-                        api_response_correction = call_together_api_style_correction_with_justifications(api_key, analysis, text_input)
-
-                        if api_response_correction:
-                            # Extraer la respuesta del modelo para la corrección de estilo con justificaciones
-                            try:
-                                correction = api_response_correction['choices'][0]['message']['content']
-                                st.subheader("✍️ Corrección de Estilo, Ortográfica, Gramatical y de Puntuación con Justificaciones")
-                                # Renderizar el texto corregido con justificaciones en rojo
-                                st.markdown(correction, unsafe_allow_html=True)
-                            except (KeyError, IndexError):
-                                st.error("Respuesta inesperada de la API de Corrección de Estilo.")
+     
