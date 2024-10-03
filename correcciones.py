@@ -7,7 +7,7 @@ from urllib.parse import urlparse, parse_qs
 
 # Acceder a las claves desde los secretos de Streamlit
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
-YOUR_DOMAIN = "http://localhost:8501"  # Reemplaza con tu dominio real, e.g., "https://tudominio.com"
+YOUR_DOMAIN = "http://correcciones.streamlit.app"  # Reemplaza con tu dominio real, e.g., "https://tudominio.com"
 
 # Configuración de la página
 st.set_page_config(
@@ -166,8 +166,8 @@ def create_checkout_session():
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=YOUR_DOMAIN + "/?success=true&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=YOUR_DOMAIN + "/?canceled=true",
+            success_url=https://correcciones.streamlit.app/ + "/?success=true&session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=https://correcciones.streamlit.app/ + "/?canceled=true",
         )
         return checkout_session.url
     except Exception as e:
