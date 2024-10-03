@@ -7,7 +7,7 @@ from urllib.parse import urlparse, parse_qs
 
 # Acceder a las claves desde los secretos de Streamlit
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
-YOUR_DOMAIN = "https://correcciones.streamlit.app"  # Reemplaza con tu dominio real, e.g., "https://tudominio.com"
+YOUR_DOMAIN = "https://correcciones.streamlit.app"  # Reemplaza con tu dominio real
 
 # Configuración de la página
 st.set_page_config(
@@ -150,24 +150,18 @@ def call_together_api_style_correction_with_justifications(api_key, analysis, te
         st.error(f"Error al comunicarse con la API de Corrección de Estilo: {e}")
         return None
 
-# Función para crear una sesión de Stripe Checkout
+# Función para crear una sesión de Stripe Checkout utilizando price_id
 def create_checkout_session():
     try:
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
-                'price_data': {9.00
-                    'currency': 'usd',
-                    'product_data': {
-                        'name': 'Análisis Literario y Corrección de Estilo',
-                    },
-                    'unit_amount': 5000,  # Monto en centavos (ejemplo: $50.00)
-                },
+                'price': st.secrets["STRIPE_PRICE_ID"],  # Utiliza el price_id desde los secretos
                 'quantity': 1,
             }],
             mode='payment',
-            success_url="https://correcciones.streamlit.app/?success=true&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url="https://correcciones.streamlit.app/?canceled=true",
+            success_url=YOUR_DOMAIN + "/?success=true&session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=YOUR_DOMAIN + "/?canceled=true",
         )
         return checkout_session.url
     except Exception as e:
