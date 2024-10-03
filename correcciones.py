@@ -1,6 +1,6 @@
 import streamlit as st
 import requests
-import json
+import json  
 from textwrap import dedent
 
 # Configuración de la página
