@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Título de la aplicación
+# Título de la aplicación 
 st.title("🔍 Análisis Literario y Recomendaciones de Estilo")
 
 # Instrucciones
