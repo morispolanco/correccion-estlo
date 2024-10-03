@@ -107,7 +107,7 @@ def call_together_api_analysis(api_key, genre, audience, text):
         st.error(f"Error al comunicarse con la API de Análisis: {e}")
         return None
 
-# Función para llamar a la API de Together para Corrección de Estilo
+# Función para llamar a la API de Together para Corrección de Estilo y Ortografía
 def call_together_api_style_correction(api_key, analysis, text):
     url = "https://api.together.xyz/v1/chat/completions"
     headers = {
@@ -120,15 +120,15 @@ def call_together_api_style_correction(api_key, analysis, text):
         {
             "role": "system",
             "content": dedent("""
-                Eres un editor experto en corrección de estilo que revisa textos literarios.
+                Eres un editor experto en corrección de estilo, ortografía, gramática y puntuación que revisa textos literarios.
                 **No debes realizar cambios que alteren el contenido original del autor.**
-                Tu tarea es corregir el estilo del texto proporcionado basado en el análisis y las recomendaciones previas, y justificar cada cambio realizado.
+                Tu tarea es corregir el estilo, ortografía, gramática y puntuación del texto proporcionado basado en el análisis y las recomendaciones previas, y justificar cada cambio realizado.
             """)
         },
         {
             "role": "user",
             "content": dedent(f"""
-                Basado en el siguiente análisis y recomendaciones, realiza una corrección de estilo del texto proporcionado. Presenta el texto corregido y justifica cada cambio realizado.
+                Basado en el siguiente análisis y recomendaciones, realiza una corrección de estilo del texto proporcionado. Incluye también correcciones ortográficas, gramaticales y de puntuación. Presenta el texto corregido y justifica cada cambio realizado.
 
                 **Análisis y Recomendaciones:**
                 {analysis}
@@ -138,7 +138,7 @@ def call_together_api_style_correction(api_key, analysis, text):
 
                 **Instrucciones adicionales:**
                 - No corrijas ni modifiques el contenido del texto.
-                - Enfócate únicamente en mejorar la claridad, el flujo y el estilo.
+                - Enfócate únicamente en mejorar la claridad, el flujo, el estilo, la ortografía, la gramática y la puntuación.
                 - Para cada cambio realizado, proporciona una justificación detallada.
                 - Presenta el texto corregido seguido de las justificaciones en formato Markdown.
             """)
@@ -199,7 +199,7 @@ if submit_button:
                         st.error("Respuesta inesperada de la API de Análisis.")
                         analysis = None
 
-                # Segunda llamada a la API para Corrección de Estilo, si el análisis fue exitoso
+                # Segunda llamada a la API para Corrección de Estilo y Ortografía, si el análisis fue exitoso
                 if analysis:
                     api_response_correction = call_together_api_style_correction(api_key, analysis, text_input)
 
@@ -207,7 +207,7 @@ if submit_button:
                         # Extraer la respuesta del modelo para la corrección de estilo
                         try:
                             correction = api_response_correction['choices'][0]['message']['content']
-                            st.subheader("✍️ Corrección de Estilo con Justificaciones")
-                            st.write(correction)
+                            st.subheader("✍️ Corrección de Estilo, Ortográfica, Gramatical y de Puntuación con Justificaciones")
+                            st.markdown(correction)
                         except (KeyError, IndexError):
                             st.error("Respuesta inesperada de la API de Corrección de Estilo.")
