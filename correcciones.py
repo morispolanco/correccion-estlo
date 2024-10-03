@@ -7,7 +7,7 @@ from urllib.parse import urlparse, parse_qs
 
 # Acceder a las claves desde los secretos de Streamlit
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
-YOUR_DOMAIN = "http://correcciones.streamlit.app"  # Reemplaza con tu dominio real, e.g., "https://tudominio.com"
+YOUR_DOMAIN = "https://correcciones.streamlit.app"  # Reemplaza con tu dominio real, e.g., "https://tudominio.com"
 
 # Configuración de la página
 st.set_page_config(
