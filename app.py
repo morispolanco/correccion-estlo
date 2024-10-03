@@ -10,7 +10,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Título de la aplicación 
+# Título de la aplicación
 st.title("🔍 Análisis Literario y Recomendaciones de Estilo")
 
 # Instrucciones
@@ -63,7 +63,8 @@ def call_together_api(api_key, genre, audience, text):
             "role": "system",
             "content": dedent("""
                 Eres un crítico literario experto que proporciona análisis detallados y recomendaciones de estilo basadas en el género y la audiencia especificados.
-                **No debes repetir el análisis anterior ni corregir el texto proporcionado.**
+                **No debes corregir, modificar ni repetir el texto proporcionado.**
+                Tu única tarea es analizar el texto y ofrecer sugerencias de mejora enfocadas en el estilo, estructura, y otros aspectos literarios relevantes.
             """)
         },
         {
@@ -73,8 +74,8 @@ def call_together_api(api_key, genre, audience, text):
 
                 **Instrucciones adicionales:**
                 - No repitas el análisis previamente proporcionado.
-                - No corrijas ni modifiques el texto original.
-                - Enfócate únicamente en proporcionar observaciones, críticas y sugerencias de mejora.
+                - No corrijas ni modifiques el texto original de ninguna manera.
+                - Enfócate únicamente en proporcionar observaciones, críticas constructivas y sugerencias de mejora.
 
                 **Género:** {genre}
                 **Audiencia:** {audience}
@@ -89,12 +90,12 @@ def call_together_api(api_key, genre, audience, text):
         "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
         "messages": messages,
         "max_tokens": 2000,  # Ajusta según tus necesidades y límites de la API
-        "temperature": 0.7,
+        "temperature": 0.5,  # Reducida para respuestas más enfocadas
         "top_p": 0.7,
         "top_k": 50,
         "repetition_penalty": 1,
         "stop": ["<|eot_id|>"],
-        "stream": False  # Para simplificar, se usa stream=False
+        "stream": False  # Mantener como False para simplificar
     }
 
     try:
@@ -137,4 +138,3 @@ if submit_button:
                         st.write(analysis)
                     except (KeyError, IndexError):
                         st.error("Respuesta inesperada de la API.")
-
