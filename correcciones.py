@@ -179,8 +179,8 @@ def create_checkout_session():
                 'quantity': 1,
             }],
             mode='payment',
-            success_url=YOUR_DOMAIN + "/?success=true&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=YOUR_DOMAIN + "/?canceled=true",
+            success_url="https://correcciones.streamlit.app?success=true&session_id={CHECKOUT_SESSION_ID}",
+            cancel_url="https://correcciones.streamlit.app/?canceled=true",
         )
         return checkout_session.url
     except Exception as e:
