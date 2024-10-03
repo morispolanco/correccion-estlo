@@ -90,7 +90,7 @@ def call_together_api_analysis(api_key, genre, audience, text):
     ]
 
     payload = {
-        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
         "messages": messages,
         "max_tokens": 2000,  # Ajusta según tus necesidades y límites de la API
         "temperature": 0.5,  # Reducida para respuestas más enfocadas
