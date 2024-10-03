@@ -11,7 +11,7 @@ st.set_page_config(
 )
 
 # Título de la aplicación
-st.title("🔍 Análisis Literario y Recomendaciones de Estilo")
+st.title("🔍 Análisis Literario y Recomendaciones de Estilo")  
 
 # Instrucciones
 st.markdown("""
