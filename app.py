@@ -1,82 +1,213 @@
 import streamlit as st
 import requests
+import re
 
-# Retrieve the Together API key from Streamlit secrets
-API_KEY = st.secrets["together_api_key"]
+# Configuración de la página
+st.set_page_config(layout="wide")
 
-# Together API endpoint
-API_URL = "https://api.together.xyz/v1/chat/completions"
+# Obtener el secreto de la API de Together
+TOGETHER_API_KEY = st.secrets.get("TOGETHER_API_KEY")
 
-def correct_paragraph(paragraph):
-    headers = {
-        "Authorization": f"Bearer {API_KEY}",
-        "Content-Type": "application/json"
-    }
+if not TOGETHER_API_KEY:
+    st.error("La clave de la API de Together no está configurada. Por favor, verifica tus secretos.")
+    st.stop()
 
-    # Define the system prompt to instruct the assistant
-    system_prompt = (
-        "Eres un asistente útil que corrige errores de ortografía y estilo en un texto, "
-        "sin cambiar las citas textuales (el texto entre comillas) y preservando las notas a pie de página "
-        "(indicadas como números entre corchetes, por ejemplo, [1]). "
-        "Mantén las notas a pie de página en los mismos lugares del texto, incluso si las oraciones cambian."
-    )
+# Función para contar palabras en el texto
+def count_words(text):
+    return len(re.findall(r'\b\w+\b', text))
 
-    messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": f"Aquí está el párrafo:\n\n{paragraph}"}
-    ]
+# Función para realizar análisis crítico literario usando la API de Together
+def literary_critical_analysis(text, language):
+    try:
+        if not text.strip() or count_words(text) < 50:
+            st.warning("Por favor, introduce un texto de al menos 50 palabras para el análisis.")
+            return None
 
-    data = {
-        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
-        "messages": messages,
-        "max_tokens": 2512,
-        "temperature": 0.7,
-        "top_p": 0.7,
-        "top_k": 50,
-        "repetition_penalty": 1,
-        "stop": ["<|eot_id|>"],
-        "stream": False
-    }
+        together_url = "https://api.together.xyz/v1/chat/completions"
 
-    response = requests.post(API_URL, headers=headers, json=data)
+        headers = {
+            "Authorization": f"Bearer {TOGETHER_API_KEY}",
+            "Content-Type": "application/json"
+        }
 
-    if response.status_code == 200:
-        result = response.json()
-        # Extract the assistant's reply
-        corrected_paragraph = result['choices'][0]['message']['content']
-        return corrected_paragraph.strip()
-    else:
-        st.error(f"Error: {response.status_code} {response.text}")
+        prompt = f"""Realiza un análisis crítico literario del siguiente texto en {language}. Destaca sus méritos y defectos de manera detallada y constructiva:
+
+        {text}"""
+
+        data = {
+            "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 1500,
+            "temperature": 0.7,
+            "top_p": 0.7,
+            "top_k": 50,
+            "repetition_penalty": 1.0,
+            "stop": ["<|eot_id|>"],
+            "stream": False
+        }
+
+        response = requests.post(together_url, json=data, headers=headers, timeout=60)
+
+        if response.status_code == 200:
+            response_data = response.json()
+            analysis = response_data.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+            if not analysis:
+                st.error("La respuesta de la API no contiene el análisis esperado.")
+                return None
+            return analysis
+        else:
+            st.error(f"Error de la API de Together: {response.status_code} - {response.text}")
+            return None
+
+    except requests.exceptions.Timeout:
+        st.error("La solicitud a la API de Together ha excedido el tiempo de espera.")
+        return None
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error al realizar la solicitud a la API de Together: {e}")
         return None
 
-# Streamlit app interface
-st.title("Aplicación de Corrección de Textos")
+# Función para realizar corrección de estilo usando la API de Together
+def style_correction(text, language, analysis):
+    try:
+        if not text.strip() or count_words(text) < 50:
+            st.warning("Por favor, introduce un texto de al menos 50 palabras para la corrección de estilo.")
+            return None
 
-st.write("Ingrese el texto que desea corregir:")
+        together_url = "https://api.together.xyz/v1/chat/completions"
 
-input_text = st.text_area("Texto de entrada", height=300)
+        headers = {
+            "Authorization": f"Bearer {TOGETHER_API_KEY}",
+            "Content-Type": "application/json"
+        }
 
-if st.button("Corregir Texto"):
-    if input_text:
-        paragraphs = [p.strip() for p in input_text.split('\n\n') if p.strip()]
-        corrected_paragraphs = []
+        prompt = f"""Basándote en el siguiente análisis crítico, realiza una corrección de estilo del texto en {language}. Asegúrate de mejorar la fluidez, coherencia y claridad del texto, manteniendo el significado original:
 
-        progress_bar = st.progress(0)
-        total = len(paragraphs)
+        Análisis crítico:
+        {analysis}
 
-        for i, paragraph in enumerate(paragraphs):
-            corrected_paragraph = correct_paragraph(paragraph)
-            if corrected_paragraph:
-                corrected_paragraphs.append(corrected_paragraph)
-            else:
-                corrected_paragraphs.append(paragraph)  # Keep the original if there's an error
-            progress_bar.progress((i + 1) / total)
+        Texto original:
+        {text}
 
-        progress_bar.empty()
+        Texto corregido:"""
 
-        corrected_text = '\n\n'.join(corrected_paragraphs)
+        data = {
+            "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 1500,
+            "temperature": 0.7,
+            "top_p": 0.7,
+            "top_k": 50,
+            "repetition_penalty": 1.0,
+            "stop": ["<|eot_id|>"],
+            "stream": False
+        }
 
-        st.write("Texto Corregido:")
-        st.write(corrected_text)
+        response = requests.post(together_url, json=data, headers=headers, timeout=60)
+
+        if response.status_code == 200:
+            response_data = response.json()
+            corrected_text = response_data.get('choices', [{}])[0].get('message', {}).get('content', '').strip()
+            if not corrected_text:
+                st.error("La respuesta de la API no contiene el texto corregido esperado.")
+                return None
+            return corrected_text
+        else:
+            st.error(f"Error de la API de Together: {response.status_code} - {response.text}")
+            return None
+
+    except requests.exceptions.Timeout:
+        st.error("La solicitud a la API de Together ha excedido el tiempo de espera.")
+        return None
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error al realizar la solicitud a la API de Together: {e}")
+        return None
+
+# Función principal de la aplicación
+def main():
+    st.sidebar.header("Instrucciones")
+    st.sidebar.markdown("""
+**Esta aplicación te permite:**
+
+- Introducir un texto de hasta **2000 palabras**.
+- Realizar un análisis crítico literario del texto, destacando sus méritos y defectos.
+- Basado en el análisis, obtener una versión corregida del texto con mejoras en estilo y claridad.
+- Recibir una explicación de las correcciones realizadas y las razones detrás de ellas.
+
+**Idiomas soportados:**
+
+La aplicación puede analizar y corregir textos en **inglés, español, francés, italiano, alemán y portugués**.
+
+**Longitud del texto:**
+
+- La aplicación está limitada a procesar hasta **2000 palabras**.
+- Si el texto excede este límite, se solicitará al usuario reducir la cantidad de texto.
+
+**Aviso legal:**
+
+Es responsabilidad del autor verificar todos los cambios antes de utilizar el texto corregido para cualquier propósito oficial o público.
+
+**Autor:** Dr. Moris Polanco (mp @ ufm.edu)
+    """)
+
+    st.title("Análisis Crítico y Corrección de Estilo de Textos Literarios")
+
+    # Selección del idioma
+    language_codes = ["es", "en", "fr", "it", "de", "pt"]
+    language_names = {
+        "es": "Español",
+        "en": "Inglés",
+        "fr": "Francés",
+        "it": "Italiano",
+        "de": "Alemán",
+        "pt": "Portugués"
+    }
+
+    language = st.selectbox(
+        "Selecciona el idioma del texto",
+        language_codes,
+        index=0,
+        format_func=lambda x: language_names.get(x, x)
+    )
+
+    # Cuadro de texto para ingresar el texto a analizar
+    st.subheader("Introduce tu texto aquí (máximo 2000 palabras):")
+    text_input = st.text_area("", height=300, max_chars=20000)  # Aproximadamente 2000 palabras
+
+    word_count = count_words(text_input)
+    st.write(f"**Cantidad de palabras:** {word_count}/2000")
+
+    if word_count > 2000:
+        st.error("El texto excede el límite de 2000 palabras. Por favor, reduce la longitud del texto.")
     else:
-        st.error("Por favor, ingrese algún texto para corregir.")
+        if st.button("Analizar y Corregir"):
+            if word_count < 50:
+                st.error("Por favor, introduce un texto de al menos 50 palabras para el análisis.")
+            else:
+                with st.spinner("Realizando análisis crítico..."):
+                    analysis = literary_critical_analysis(text_input, language)
+                
+                if analysis:
+                    st.subheader("Análisis Crítico Literario")
+                    st.write(analysis)
+
+                    with st.spinner("Realizando corrección de estilo..."):
+                        corrected_text = style_correction(text_input, language, analysis)
+                    
+                    if corrected_text:
+                        st.subheader("Texto Corregido")
+                        st.write(corrected_text)
+
+                        st.markdown("---")
+                        st.subheader("Resumen de Cambios Realizados")
+                        st.markdown("""
+- **Análisis Crítico:** Se realizó un análisis detallado del texto, destacando sus **méritos** (puntos fuertes) y **defectos** (áreas de mejora) desde una perspectiva literaria.
+- **Corrección de Estilo:** Basado en el análisis, se corrigió el estilo del texto para mejorar la **fluidez**, **coherencia** y **claridad**, manteniendo el significado original.
+- **Justificación de Cambios:** Los cambios se realizaron para potenciar la calidad literaria del texto, asegurando que cumpla con estándares elevados de redacción y expresión.
+                        """)
+
+if __name__ == "__main__":
+    main()
