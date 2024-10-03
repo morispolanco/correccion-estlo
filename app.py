@@ -11,11 +11,11 @@ st.set_page_config(
 )
 
 # Título de la aplicación
-st.title("🔍 Análisis Literario y Recomendaciones de Estilo")  
+st.title("🔍 Análisis Literario y Recomendaciones de Estilo")
 
 # Instrucciones
 st.markdown("""
-Bienvenido a la herramienta de análisis literario. Por favor, completa los campos a continuación para obtener una crítica literaria detallada y recomendaciones de estilo.
+Bienvenido a la herramienta de análisis literario. Por favor, completa los campos a continuación para obtener una crítica literaria detallada y recomendaciones de estilo específicas para tu texto.
 """)
 
 # Formulario de entrada
@@ -57,25 +57,26 @@ def call_together_api(api_key, genre, audience, text):
         "Content-Type": "application/json"
     }
 
-    # Construcción de los mensajes para la API con instrucciones claras
+    # Construcción de los mensajes para la API con instrucciones claras y específicas
     messages = [
         {
             "role": "system",
             "content": dedent("""
                 Eres un crítico literario experto que proporciona análisis detallados y recomendaciones de estilo basadas en el género y la audiencia especificados.
                 **No debes corregir, modificar ni repetir el texto proporcionado.**
-                Tu única tarea es analizar el texto y ofrecer sugerencias de mejora enfocadas en el estilo, estructura, y otros aspectos literarios relevantes.
+                Tu única tarea es analizar el texto y ofrecer sugerencias de mejora enfocadas en aspectos literarios específicos como temas, desarrollo de personajes, estructura narrativa, tono, y estilo.
             """)
         },
         {
             "role": "user",
             "content": dedent(f"""
-                Por favor, analiza el siguiente texto y proporciona una crítica literaria junto con recomendaciones de estilo.
+                Por favor, analiza el siguiente texto y proporciona una crítica literaria junto con recomendaciones de estilo específicas.
 
                 **Instrucciones adicionales:**
                 - No repitas el análisis previamente proporcionado.
                 - No corrijas ni modifiques el texto original de ninguna manera.
-                - Enfócate únicamente en proporcionar observaciones, críticas constructivas y sugerencias de mejora.
+                - Enfócate únicamente en proporcionar observaciones, críticas constructivas y sugerencias de mejora relacionadas directamente con el contenido del texto.
+                - Organiza el análisis en secciones claras como **Temas**, **Desarrollo de Personajes**, **Estructura Narrativa**, **Estilo y Tono**, etc.
 
                 **Género:** {genre}
                 **Audiencia:** {audience}
