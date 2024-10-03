@@ -5,7 +5,7 @@ import stripe
 from textwrap import dedent
 
 # Definir el product_id directamente en el código
-PRODUCT_ID = "prod_XXXXXXXXXXXXXXXX"  # Reemplaza con tu product_id real
+PRODUCT_ID = "prod_QwZPXT67PV3srt"  # Reemplaza con tu product_id real
 
 # Acceder a las claves desde los secretos de Streamlit
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
