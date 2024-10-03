@@ -5,7 +5,7 @@ from textwrap import dedent
 
 # Configuración de la página
 st.set_page_config(
-    page_title="Análisis Literario y Corrección de Estilo con Together API",
+    page_title="Análisis Literario y Corrección de Estilo",
     layout="wide",
     initial_sidebar_state="expanded",
 )
