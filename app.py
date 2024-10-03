@@ -57,21 +57,29 @@ def call_together_api(api_key, genre, audience, text):
         "Content-Type": "application/json"
     }
 
-    # Construcción de los mensajes para la API
+    # Construcción de los mensajes para la API con instrucciones claras
     messages = [
         {
             "role": "system",
-            "content": "Eres un crítico literario experto que proporciona análisis detallados y recomendaciones de estilo basadas en el género y la audiencia especificados."
+            "content": dedent("""
+                Eres un crítico literario experto que proporciona análisis detallados y recomendaciones de estilo basadas en el género y la audiencia especificados.
+                **No debes repetir el análisis anterior ni corregir el texto proporcionado.**
+            """)
         },
         {
             "role": "user",
             "content": dedent(f"""
                 Por favor, analiza el siguiente texto y proporciona una crítica literaria junto con recomendaciones de estilo.
 
-                Género: {genre}
-                Audiencia: {audience}
+                **Instrucciones adicionales:**
+                - No repitas el análisis previamente proporcionado.
+                - No corrijas ni modifiques el texto original.
+                - Enfócate únicamente en proporcionar observaciones, críticas y sugerencias de mejora.
 
-                Texto:
+                **Género:** {genre}
+                **Audiencia:** {audience}
+
+                **Texto:**
                 {text}
             """)
         }
@@ -129,3 +137,4 @@ if submit_button:
                         st.write(analysis)
                     except (KeyError, IndexError):
                         st.error("Respuesta inesperada de la API.")
+
