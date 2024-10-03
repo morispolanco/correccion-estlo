@@ -76,6 +76,8 @@ def call_together_api_analysis(api_key, genre, audience, text):
                 - No repitas el análisis previamente proporcionado.
                 - No corrijas ni modifiques el texto original de ninguna manera.
                 - Enfócate únicamente en proporcionar observaciones, críticas constructivas y sugerencias de mejora relacionadas directamente con el contenido del texto.
+                - Preserva todos los hipervínculos existentes en el texto. No agregues nuevos hipervínculos a menos que sean necesarios.
+                - No alteres las URLs de los hipervínculos existentes.
                 - Organiza el análisis en secciones claras como **Temas**, **Desarrollo de Personajes**, **Estructura Narrativa**, **Estilo y Tono**, etc.
 
                 **Género:** {genre}
@@ -123,6 +125,7 @@ def call_together_api_style_correction(api_key, analysis, text):
                 Eres un editor experto en corrección de estilo, ortografía, gramática y puntuación que revisa textos literarios.
                 **No debes realizar cambios que alteren el contenido original del autor.**
                 Tu tarea es corregir el estilo, ortografía, gramática y puntuación del texto proporcionado basado en el análisis y las recomendaciones previas, y justificar cada cambio realizado.
+                **Preserva todos los hipervínculos existentes en el texto. No agregues nuevos hipervínculos a menos que sean necesarios. No alteres las URLs de los hipervínculos existentes.**
             """)
         },
         {
@@ -139,6 +142,8 @@ def call_together_api_style_correction(api_key, analysis, text):
                 **Instrucciones adicionales:**
                 - No corrijas ni modifiques el contenido del texto.
                 - Enfócate únicamente en mejorar la claridad, el flujo, el estilo, la ortografía, la gramática y la puntuación.
+                - Preserva todos los hipervínculos existentes en el texto. No agregues nuevos hipervínculos a menos que sean necesarios.
+                - No alteres las URLs de los hipervínculos existentes.
                 - Para cada cambio realizado, proporciona una justificación detallada.
                 - Presenta el texto corregido seguido de las justificaciones en formato Markdown.
             """)
