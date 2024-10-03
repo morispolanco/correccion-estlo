@@ -15,7 +15,7 @@ st.title("🔍 Análisis Literario y Corrección de Estilo")
 
 # Instrucciones
 st.markdown("""
-Bienvenido a la herramienta de análisis literario y corrección de estilo. Por favor, completa los campos a continuación para obtener una crítica literaria detallada, recomendaciones de estilo específicas y una versión corregida de tu texto con y sin justificaciones de los cambios realizados.
+Bienvenido a la herramienta de análisis literario y corrección de estilo. Por favor, completa los campos a continuación para obtener una crítica literaria detallada, recomendaciones de estilo específicas y una versión corregida de tu texto con justificaciones de los cambios realizados.
 """)
 
 # Formulario de entrada
@@ -109,7 +109,7 @@ def call_together_api_analysis(api_key, genre, audience, text):
         st.error(f"Error al comunicarse con la API de Análisis: {e}")
         return None
 
-# Función para llamar a la API de Together para Corrección de Estilo y Ortografía con Justificaciones
+# Función para llamar a la API de Together para Corrección de Estilo y Ortografía
 def call_together_api_style_correction(api_key, analysis, text):
     url = "https://api.together.xyz/v1/chat/completions"
     headers = {
@@ -170,66 +170,6 @@ def call_together_api_style_correction(api_key, analysis, text):
         st.error(f"Error al comunicarse con la API de Corrección de Estilo: {e}")
         return None
 
-# Función para llamar a la API de Together para Corrección de Estilo y Ortografía sin Justificaciones
-def call_together_api_style_correction_simple(api_key, analysis, text):
-    url = "https://api.together.xyz/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
-
-    # Construcción de los mensajes para la API con instrucciones para solo corregir sin justificaciones
-    messages = [
-        {
-            "role": "system",
-            "content": dedent("""
-                Eres un editor experto en corrección de estilo, ortografía, gramática y puntuación que revisa textos literarios.
-                **No debes realizar cambios que alteren el contenido original del autor.**
-                Tu tarea es corregir el estilo, ortografía, gramática y puntuación del texto proporcionado basado en el análisis y las recomendaciones previas.
-                **Preserva todos los hipervínculos existentes en el texto. No agregues nuevos hipervínculos a menos que sean necesarios. No alteres las URLs de los hipervínculos existentes.**
-            """)
-        },
-        {
-            "role": "user",
-            "content": dedent(f"""
-                Basado en el siguiente análisis y recomendaciones, realiza una corrección de estilo del texto proporcionado. Incluye también correcciones ortográficas, gramaticales y de puntuación. Presenta únicamente el texto corregido sin justificaciones.
-
-                **Análisis y Recomendaciones:**
-                {analysis}
-
-                **Texto Original:**
-                {text}
-
-                **Instrucciones adicionales:**
-                - No corrijas ni modifiques el contenido del texto.
-                - Enfócate únicamente en mejorar la claridad, el flujo, el estilo, la ortografía, la gramática y la puntuación.
-                - Preserva todos los hipervínculos existentes en el texto. No agregues nuevos hipervínculos a menos que sean necesarios.
-                - No alteres las URLs de los hipervínculos existentes.
-                - Presenta únicamente el texto corregido sin incluir justificaciones o explicaciones adicionales.
-            """)
-        }
-    ]
-
-    payload = {
-        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
-        "messages": messages,
-        "max_tokens": 3000,  # Ajusta según tus necesidades y límites de la API
-        "temperature": 0.5,  # Reducida para respuestas más enfocadas
-        "top_p": 0.7,
-        "top_k": 50,
-        "repetition_penalty": 1,
-        "stop": ["<|eot_id|>"],
-        "stream": False  # Mantener como False para simplificar
-    }
-
-    try:
-        response = requests.post(url, headers=headers, data=json.dumps(payload))
-        response.raise_for_status()
-        return response.json()
-    except requests.exceptions.RequestException as e:
-        st.error(f"Error al comunicarse con la API de Corrección de Estilo Simple: {e}")
-        return None
-
 # Acción al enviar el formulario
 if submit_button:
     # Validación de entrada
@@ -264,27 +204,15 @@ if submit_button:
                         st.error("Respuesta inesperada de la API de Análisis.")
                         analysis = None
 
-                # Segunda llamada a la API para Corrección de Estilo y Ortografía con Justificaciones, si el análisis fue exitoso
+                # Segunda llamada a la API para Corrección de Estilo y Ortografía, si el análisis fue exitoso
                 if analysis:
                     api_response_correction = call_together_api_style_correction(api_key, analysis, text_input)
 
                     if api_response_correction:
-                        # Extraer la respuesta del modelo para la corrección de estilo con justificaciones
+                        # Extraer la respuesta del modelo para la corrección de estilo
                         try:
                             correction = api_response_correction['choices'][0]['message']['content']
                             st.subheader("✍️ Corrección de Estilo, Ortográfica, Gramatical y de Puntuación con Justificaciones")
                             st.markdown(correction)
                         except (KeyError, IndexError):
                             st.error("Respuesta inesperada de la API de Corrección de Estilo.")
-                    
-                    # Tercera llamada a la API para Corrección de Estilo y Ortografía sin Justificaciones
-                    api_response_correction_simple = call_together_api_style_correction_simple(api_key, analysis, text_input)
-
-                    if api_response_correction_simple:
-                        # Extraer la respuesta del modelo para la corrección de estilo sin justificaciones
-                        try:
-                            correction_simple = api_response_correction_simple['choices'][0]['message']['content']
-                            st.subheader("✍️ Corrección de Estilo, Ortográfica, Gramatical y de Puntuación (Sin Justificaciones)")
-                            st.markdown(correction_simple)
-                        except (KeyError, IndexError):
-                            st.error("Respuesta inesperada de la API de Corrección de Estilo Simple.")
