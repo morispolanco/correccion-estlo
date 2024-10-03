@@ -156,7 +156,7 @@ def create_checkout_session():
         checkout_session = stripe.checkout.Session.create(
             payment_method_types=['card'],
             line_items=[{
-                'price_data': {
+                'price_data': {9.00
                     'currency': 'usd',
                     'product_data': {
                         'name': 'Análisis Literario y Corrección de Estilo',
