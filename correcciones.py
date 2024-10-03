@@ -3,7 +3,9 @@ import requests
 import json
 import stripe
 from textwrap import dedent
-from urllib.parse import urlparse, parse_qs
+
+# Definir el product_id directamente en el código
+PRODUCT_ID = "prod_XXXXXXXXXXXXXXXX"  # Reemplaza con tu product_id real
 
 # Acceder a las claves desde los secretos de Streamlit
 stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
@@ -165,8 +167,7 @@ def get_price_id(product_id):
 
 # Función para crear una sesión de Stripe Checkout utilizando product_id
 def create_checkout_session():
-    product_id = st.secrets["STRIPE_PRODUCT_ID"]
-    price_id = get_price_id(product_id)
+    price_id = get_price_id(PRODUCT_ID)
     if not price_id:
         return None
 
@@ -178,8 +179,8 @@ def create_checkout_session():
                 'quantity': 1,
             }],
             mode='payment',
-            success_url="https://correcciones.streamlit.app/?success=true&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url="https://correcciones.streamlit.app/?canceled=true",
+            success_url=YOUR_DOMAIN + "/?success=true&session_id={CHECKOUT_SESSION_ID}",
+            cancel_url=YOUR_DOMAIN + "/?canceled=true",
         )
         return checkout_session.url
     except Exception as e:
@@ -245,4 +246,29 @@ if payment_verified:
 
         # Entrada de audiencia
         audience = st.text_input(
-     
+            "Define la audiencia:",
+            help="Por ejemplo: adolescentes, adultos jóvenes, adultos, etc."
+        )
+
+        # Botón de envío
+        submit_button = st.form_submit_button(label='Analizar y Corregir')
+
+    if submit_button:
+        # Validación de entrada
+        if not text_input.strip():
+            st.error("Por favor, pega tu texto para analizar y corregir.")
+        elif not audience.strip():
+            st.error("Por favor, define la audiencia.")
+        else:
+            word_count = count_words(text_input)
+            if word_count > 2000:
+                st.error(f"El texto excede el límite de 2000 palabras. Actualmente tiene {word_count} palabras.")
+            else:
+                # Mostrar spinner mientras se procesa la solicitud
+                with st.spinner("Procesando tu solicitud..."):
+                    # Obtener la API Key desde los secretos
+                    try:
+                        api_key = st.secrets["TOGETHER_API_KEY"]
+                    except KeyError:
+                        st.error("La clave de la API no está configurada correctamente en los secrets.")
+           
