@@ -1,15 +1,7 @@
 import streamlit as st
 import requests
 import json
-import stripe
 from textwrap import dedent
-
-# Definir el product_id directamente en el código
-PRODUCT_ID = "prod_QwZPXT67PV3srt"  # Reemplaza con tu product_id real
-
-# Acceder a las claves desde los secretos de Streamlit
-stripe.api_key = st.secrets["STRIPE_SECRET_KEY"]
-YOUR_DOMAIN = "https://correcciones.streamlit.app"  # Reemplaza con tu dominio real
 
 # Configuración de la página
 st.set_page_config(
@@ -23,8 +15,35 @@ st.title("🔍 Análisis Literario y Corrección de Estilo")
 
 # Instrucciones
 st.markdown("""
-Bienvenido a la herramienta de análisis literario y corrección de estilo. Para utilizar este servicio, por favor realiza un pago puntual. Una vez confirmado el pago, podrás acceder al análisis y corrección de tu texto.
+Bienvenido a la herramienta de análisis literario y corrección de estilo. Por favor, completa los campos a continuación para obtener una crítica literaria detallada, recomendaciones de estilo específicas y una versión corregida de tu texto con justificaciones de los cambios realizados.
 """)
+
+# Formulario de entrada
+with st.form(key='literary_analysis_form'):
+    # Área de texto para el contenido
+    text_input = st.text_area(
+        "Pega tu texto (máximo 2000 palabras):",
+        height=300,
+        help="Asegúrate de que tu texto no exceda las 2000 palabras."
+    )
+
+    # Selección de género
+    genre = st.selectbox(
+        "Selecciona el género:",
+        options=[
+            "Fantasía", "Ciencia Ficción", "Misterio", "Romance",
+            "Terror", "Aventura", "Drama", "Histórico", "Otro"
+        ]
+    )
+
+    # Entrada de audiencia
+    audience = st.text_input(
+        "Define la audiencia:",
+        help="Por ejemplo: adolescentes, adultos jóvenes, adultos, etc."
+    )
+
+    # Botón de envío
+    submit_button = st.form_submit_button(label='Analizar y Corregir')
 
 # Función para contar palabras
 def count_words(text):
@@ -71,7 +90,7 @@ def call_together_api_analysis(api_key, genre, audience, text):
     ]
 
     payload = {
-        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
         "messages": messages,
         "max_tokens": 2000,  # Ajusta según tus necesidades y límites de la API
         "temperature": 0.5,  # Reducida para respuestas más enfocadas
@@ -152,123 +171,50 @@ def call_together_api_style_correction_with_justifications(api_key, analysis, te
         st.error(f"Error al comunicarse con la API de Corrección de Estilo: {e}")
         return None
 
-# Función para obtener el price_id asociado a un product_id
-def get_price_id(product_id):
-    try:
-        prices = stripe.Price.list(product=product_id, active=True, limit=1)
-        if prices.data:
-            return prices.data[0].id
-        else:
-            st.error("No se encontró ningún precio activo asociado al producto.")
-            return None
-    except Exception as e:
-        st.error(f"Error al obtener el price_id desde Stripe: {e}")
-        return None
-
-# Función para crear una sesión de Stripe Checkout utilizando product_id
-def create_checkout_session():
-    price_id = get_price_id(PRODUCT_ID)
-    if not price_id:
-        return None
-
-    try:
-        checkout_session = stripe.checkout.Session.create(
-            payment_method_types=['card'],
-            line_items=[{
-                'price': price_id,  # Utiliza el price_id obtenido dinámicamente
-                'quantity': 1,
-            }],
-            mode='payment',
-            success_url="https://correcciones.streamlit.app/?success=true&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url="https://correcciones.streamlit.app/?canceled=true",
-        )
-        return checkout_session.url
-    except Exception as e:
-        st.error(f"Error al crear la sesión de pago: {e}")
-        return None
-
-# Función para verificar el estado del pago
-def verify_payment(session_id):
-    try:
-        session = stripe.checkout.Session.retrieve(session_id)
-        return session.payment_status == 'paid'
-    except Exception as e:
-        st.error(f"Error al verificar el pago: {e}")
-        return False
-
-# Obtener parámetros de la URL para verificar el estado del pago
-query_params = st.experimental_get_query_params()
-
-if 'success' in query_params:
-    st.success("¡Pago realizado con éxito! Ahora puedes utilizar el servicio.")
-    # Aquí puedes establecer un estado de sesión o cookie para recordar al usuario
-elif 'canceled' in query_params:
-    st.warning("El pago fue cancelado. Inténtalo de nuevo.")
-elif 'session_id' in query_params:
-    session_id = query_params['session_id'][0]
-    payment_confirmed = verify_payment(session_id)
-    if payment_confirmed:
-        st.success("¡Pago confirmado! Ahora puedes utilizar el servicio.")
+# Acción al enviar el formulario
+if submit_button:
+    # Validación de entrada
+    if not text_input.strip():
+        st.error("Por favor, pega tu texto para analizar y corregir.")
+    elif not audience.strip():
+        st.error("Por favor, define la audiencia.")
     else:
-        st.error("El pago no se pudo verificar. Por favor, intenta de nuevo.")
-
-# Botón para iniciar el proceso de pago
-if 'success' not in query_params and 'session_id' not in query_params:
-    if st.button("💳 Pagar por Uso"):
-        checkout_url = create_checkout_session()
-        if checkout_url:
-            # Redirigir al usuario a la página de Stripe Checkout
-            st.markdown(f'<meta http-equiv="refresh" content="0; url={checkout_url}" />', unsafe_allow_html=True)
-
-# Verificar si el pago ha sido realizado antes de mostrar el formulario
-payment_verified = False
-if 'success' in query_params or ('session_id' in query_params and verify_payment(query_params['session_id'][0])):
-    payment_verified = True
-
-if payment_verified:
-    # Formulario de entrada
-    with st.form(key='literary_analysis_form'):
-        # Área de texto para el contenido
-        text_input = st.text_area(
-            "Pega tu texto (máximo 2000 palabras):",
-            height=300,
-            help="Asegúrate de que tu texto no exceda las 2000 palabras."
-        )
-
-        # Selección de género
-        genre = st.selectbox(
-            "Selecciona el género:",
-            options=[
-                "Fantasía", "Ciencia Ficción", "Misterio", "Romance",
-                "Terror", "Aventura", "Drama", "Histórico", "Otro"
-            ]
-        )
-
-        # Entrada de audiencia
-        audience = st.text_input(
-            "Define la audiencia:",
-            help="Por ejemplo: adolescentes, adultos jóvenes, adultos, etc."
-        )
-
-        # Botón de envío
-        submit_button = st.form_submit_button(label='Analizar y Corregir')
-
-    if submit_button:
-        # Validación de entrada
-        if not text_input.strip():
-            st.error("Por favor, pega tu texto para analizar y corregir.")
-        elif not audience.strip():
-            st.error("Por favor, define la audiencia.")
+        word_count = count_words(text_input)
+        if word_count > 2000:
+            st.error(f"El texto excede el límite de 2000 palabras. Actualmente tiene {word_count} palabras.")
         else:
-            word_count = count_words(text_input)
-            if word_count > 2000:
-                st.error(f"El texto excede el límite de 2000 palabras. Actualmente tiene {word_count} palabras.")
-            else:
-                # Mostrar spinner mientras se procesa la solicitud
-                with st.spinner("Procesando tu solicitud..."):
-                    # Obtener la API Key desde los secretos
+            # Mostrar spinner mientras se procesa la solicitud
+            with st.spinner("Procesando tu solicitud..."):
+                # Obtener la API Key desde los secretos
+                try:
+                    api_key = st.secrets["TOGETHER_API_KEY"]
+                except KeyError:
+                    st.error("La clave de la API no está configurada correctamente en los secrets.")
+                    st.stop()
+
+                # Primera llamada a la API para Análisis Literario
+                api_response_analysis = call_together_api_analysis(api_key, genre, audience, text_input)
+
+                if api_response_analysis:
+                    # Extraer la respuesta del modelo para el análisis
                     try:
-                        api_key = st.secrets["TOGETHER_API_KEY"]
-                    except KeyError:
-                        st.error("La clave de la API no está configurada correctamente en los secrets.")
-           
+                        analysis = api_response_analysis['choices'][0]['message']['content']
+                        st.subheader("📄 Análisis Literario")
+                        st.write(analysis)
+                    except (KeyError, IndexError):
+                        st.error("Respuesta inesperada de la API de Análisis.")
+                        analysis = None
+
+                # Segunda llamada a la API para Corrección de Estilo y Ortografía con Justificaciones Inline, si el análisis fue exitoso
+                if analysis:
+                    api_response_correction = call_together_api_style_correction_with_justifications(api_key, analysis, text_input)
+
+                    if api_response_correction:
+                        # Extraer la respuesta del modelo para la corrección de estilo con justificaciones
+                        try:
+                            correction = api_response_correction['choices'][0]['message']['content']
+                            st.subheader("✍️ Corrección de Estilo, Ortográfica, Gramatical y de Puntuación con Justificaciones")
+                            # Renderizar el texto corregido con justificaciones en rojo
+                            st.markdown(correction, unsafe_allow_html=True)
+                        except (KeyError, IndexError):
+                            st.error("Respuesta inesperada de la API de Corrección de Estilo.")
