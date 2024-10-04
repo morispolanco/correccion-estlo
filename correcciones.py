@@ -10,6 +10,7 @@ from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 import re
+import json
 
 # -------------------------------
 # Función para crear el archivo DOCX
@@ -62,6 +63,124 @@ def create_docx(analysis, correction):
     docx_io.seek(0)
 
     return docx_io
+
+# -------------------------------
+# Función para el análisis literario
+# -------------------------------
+def call_together_api_analysis(api_key, genre, audience, text):
+    url = "https://api.together.xyz/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    # Construcción de los mensajes para la API con instrucciones claras y específicas
+    messages = [
+        {
+            "role": "system",
+            "content": dedent("""
+                Eres un crítico literario experto que proporciona análisis detallados y recomendaciones de estilo basadas en el género y la audiencia especificados.
+                **No debes corregir, modificar ni repetir el texto proporcionado.**
+                Tu única tarea es analizar el texto y ofrecer sugerencias de mejora enfocadas en aspectos literarios específicos como temas, desarrollo de personajes, estructura narrativa, tono y estilo.
+            """)
+        },
+        {
+            "role": "user",
+            "content": dedent(f"""
+                Por favor, analiza el siguiente texto y proporciona una crítica literaria junto con recomendaciones de estilo específicas.
+
+                **Género:** {genre}
+                **Audiencia:** {audience}
+
+                **Texto:**
+                {text}
+            """)
+        }
+    ]
+
+    payload = {
+        "model": "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+        "messages": messages,
+        "max_tokens": 2000,
+        "temperature": 0.5,
+        "top_p": 0.7,
+        "top_k": 50,
+        "repetition_penalty": 1,
+        "stop": ["<|eot_id|>"],
+        "stream": False
+    }
+
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error al comunicarse con la API de Análisis: {e}")
+        return None
+
+# -------------------------------
+# Función para la corrección de estilo
+# -------------------------------
+def call_together_api_style_correction_with_justifications(api_key, analysis, text):
+    url = "https://api.together.xyz/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json"
+    }
+
+    # Construcción de los mensajes para la API con instrucciones claras y específicas
+    messages = [
+        {
+            "role": "system",
+            "content": dedent("""
+                Eres un editor experto en corrección de estilo, ortografía, gramática y puntuación que revisa textos literarios.
+                **No debes realizar cambios que alteren el contenido original del autor.**
+                Tu tarea es corregir el estilo, ortografía, gramática y puntuación del texto proporcionado basado en el análisis y las recomendaciones previas.
+                **Preserva todos los hipervínculos existentes en el texto. No agregues nuevos hipervínculos a menos que sean necesarios. No alteres las URLs de los hipervínculos existentes.**
+                **Después de cada cambio realizado, añade una justificación entre corchetes y en color rojo.**
+            """)
+        },
+        {
+            "role": "user",
+            "content": dedent(f"""
+                Basado en el siguiente análisis y recomendaciones, realiza una corrección de estilo del texto proporcionado. Incluye también correcciones ortográficas, gramaticales y de puntuación. Después de cada cambio realizado, añade una justificación entre corchetes y estilizada en color rojo.
+
+                **Análisis y Recomendaciones:**
+                {analysis}
+
+                **Texto Original:**
+                {text}
+
+                **Instrucciones adicionales:**
+                - No corrijas ni modifiques el contenido del texto.
+                - Enfócate únicamente en mejorar la claridad, el flujo, el estilo, la ortografía, la gramática y la puntuación.
+                - Preserva todos los hipervínculos existentes en el texto. No agregues nuevos hipervínculos a menos que sean necesarios.
+                - No alteres las URLs de los hipervínculos existentes.
+                - Para cada cambio realizado, proporciona una justificación detallada entre corchetes y estilizada en color rojo.
+                - Presenta el texto corregido con las justificaciones inline.
+            """)
+        }
+    ]
+
+    payload = {
+        "model": "mistralai/Mixtral-8x7B-Instruct-v0.1",
+        "messages": messages,
+        "max_tokens": 3000,
+        "temperature": 0.5,
+        "top_p": 0.7,
+        "top_k": 50,
+        "repetition_penalty": 1,
+        "stop": ["<|eot_id|>"],
+        "stream": False
+    }
+
+    try:
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"Error al comunicarse con la API de Corrección de Estilo: {e}")
+        return None
 
 # -------------------------------
 # Configuración de la página
