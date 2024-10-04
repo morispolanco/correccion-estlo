@@ -373,12 +373,17 @@ if token and verify_jwt_token(token[0]):
                                 st.error("Respuesta inesperada de la API de Corrección de Estilo.")
 
                         # Botón para descargar el archivo DOCX
-                        st.download_button(
+                        download_button = st.download_button(
                             label="📥 Descargar Análisis y Corrección (DOCX)",
                             data=st.session_state['docx_file'],
                             file_name="Analisis_y_Correcion.docx",
                             mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         )
+
+                        # Restablecer a la posición de pago después de descargar
+                        if download_button:
+                            st.session_state.clear()
+                            st.experimental_rerun()
 
 else:
     st.warning("Por favor, realiza el pago antes de continuar.")
