@@ -2,20 +2,70 @@ import streamlit as st
 import stripe
 import os
 from io import BytesIO
-import docx
 import requests
 import jwt
 import datetime
-from docx.oxml.ns import qn
-from docx.oxml import OxmlElement
-import re
 from textwrap import dedent
+from docx import Document
+from docx.shared import Pt, RGBColor
+from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
+import re
 
 # -------------------------------
-# Configuration and Initialization
+# Función para crear el archivo DOCX
 # -------------------------------
+def create_docx(analysis, correction):
+    """
+    Crea un archivo DOCX con el análisis literario y la corrección de estilo.
 
+    Args:
+        analysis (str): Texto del análisis literario.
+        correction (str): Texto de la corrección con justificaciones.
+
+    Returns:
+        BytesIO: Objeto BytesIO con el contenido del DOCX.
+    """
+    document = Document()
+
+    # Título del Documento
+    title = document.add_heading('Análisis Literario y Corrección de Estilo', level=1)
+    title.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+
+    # Sección de Análisis Literario
+    document.add_heading('📄 Análisis Literario', level=2)
+    document.add_paragraph(analysis)
+
+    # Sección de Corrección de Estilo
+    document.add_heading('✍️ Corrección de Estilo, Ortográfica, Gramatical y de Puntuación con Justificaciones', level=2)
+    
+    # Procesar el texto de corrección para separar cambios y justificaciones
+    pattern = re.compile(r'(.*?)\[(.*?)\]', re.DOTALL)
+    matches = pattern.findall(correction)
+
+    for original, justification in matches:
+        para = document.add_paragraph()
+        run_original = para.add_run(original)
+        run_original.font.size = Pt(12)
+
+        run_justification = para.add_run(f"[{justification}]")
+        run_justification.font.size = Pt(12)
+        run_justification.font.color.rgb = RGBColor(255, 0, 0)  # Rojo
+
+    # Manejar cualquier texto que no coincida con el patrón
+    non_matched_text = pattern.sub('', correction)
+    if non_matched_text.strip():
+        document.add_paragraph(non_matched_text)
+
+    # Guardar el documento en un objeto BytesIO
+    docx_io = BytesIO()
+    document.save(docx_io)
+    docx_io.seek(0)
+
+    return docx_io
+
+# -------------------------------
 # Configuración de la página
+# -------------------------------
 st.set_page_config(
     page_title="Análisis Literario y Corrección de Estilo",
     layout="wide",
@@ -92,7 +142,6 @@ def create_checkout_session(price_id):
 # -------------------------------
 # Sidebar Instructions
 # -------------------------------
-
 st.sidebar.header("Instrucciones")
 st.sidebar.markdown("""
 **Esta aplicación te permite:**
@@ -348,22 +397,21 @@ if acceso_concedido:
                             except (KeyError, IndexError):
                                 st.error("Respuesta inesperada de la API de Corrección de Estilo.")
 
-                            # Opción para descargar el texto corregido
-                            if st.button("Descargar Corrección"):
-                                corrected_file = BytesIO()
-                                corrected_file.write(correction.encode('utf-8'))
-                                corrected_file.seek(0)
-                                st.download_button(
-                                    label="Descargar Corrección",
-                                    data=corrected_file,
-                                    file_name="correccion.txt",
-                                    mime="text/plain"
-                                )
+                            # Crear el archivo DOCX
+                            docx_file = create_docx(analysis, correction)
 
-# -------------------------------
-# Optional: Reset Query Parameters
-# -------------------------------
+                            # Proporcionar el botón de descarga
+                            st.download_button(
+                                label="📥 Descargar Análisis y Corrección (DOCX)",
+                                data=docx_file,
+                                file_name="Analisis_y_Correcion.docx",
+                                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            )
 
-# Limpiar los parámetros de consulta después de procesar
-if acceso_concedido and (token or cancel):
-    st.experimental_set_query_params()
+    # -------------------------------
+    # Optional: Reset Query Parameters
+    # -------------------------------
+
+    # Limpiar los parámetros de consulta después de procesar
+    if acceso_concedido and (token or cancel):
+        st.experimental_set_query_params()
