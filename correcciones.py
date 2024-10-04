@@ -370,7 +370,7 @@ if token and verify_jwt_token(token[0]):
                                 st.session_state['docx_file'] = docx_file
 
                             except (KeyError, IndexError):
-                                st.error("Respuesta inesperada de la API de Corrección de Estilo.")
+                                st.error("Respuesta inesperada de la API de Corrección de Estilo.") 
 
                         # Botón para descargar el archivo DOCX
                         download_button = st.download_button(
