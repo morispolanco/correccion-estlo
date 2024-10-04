@@ -273,6 +273,15 @@ st.sidebar.markdown("""
 """)
 
 # -------------------------------
+# Función para restablecer la aplicación
+# -------------------------------
+def reset_app():
+    # Limpiar el estado de sesión y recargar la aplicación
+    st.session_state.clear()
+    st.experimental_set_query_params()  # Limpia los parámetros de la URL
+    st.experimental_rerun()
+
+# -------------------------------
 # Pago con Stripe
 # -------------------------------
 
@@ -360,7 +369,6 @@ if token and verify_jwt_token(token[0]):
                                 correction = api_response_correction['choices'][0]['message']['content']
                                 st.subheader("✍️ Corrección de Estilo, Ortográfica, Gramatical y de Puntuación con Justificaciones")
                                 # Renderizar el texto corregido con justificaciones en rojo
-                                # Asegúrate de que la respuesta de la API esté formateada en Markdown con HTML para estilos
                                 st.markdown(correction, unsafe_allow_html=True)
 
                                 # Crear el archivo DOCX
@@ -370,20 +378,16 @@ if token and verify_jwt_token(token[0]):
                                 st.session_state['docx_file'] = docx_file
 
                             except (KeyError, IndexError):
-                                st.error("Respuesta inesperada de la API de Corrección de Estilo.") 
+                                st.error("Respuesta inesperada de la API de Corrección de Estilo.")
 
-                        # Botón para descargar el archivo DOCX
-                        download_button = st.download_button(
+                        # Botón para descargar el archivo DOCX con función de restablecimiento
+                        st.download_button(
                             label="📥 Descargar Análisis y Corrección (DOCX)",
                             data=st.session_state['docx_file'],
                             file_name="Analisis_y_Correcion.docx",
-                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                            on_click=reset_app  # Llama a la función para restablecer la aplicación
                         )
-
-                        # Restablecer a la posición de pago después de descargar
-                        if download_button:
-                            st.session_state.clear()
-                            st.experimental_rerun()
 
 else:
     st.warning("Por favor, realiza el pago antes de continuar.")
